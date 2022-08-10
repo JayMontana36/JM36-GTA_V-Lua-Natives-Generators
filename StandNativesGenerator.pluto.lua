@@ -1,8 +1,9 @@
 local json_decode = require('json').decode
 local setmetatable = setmetatable
 local io_open = io.open
+local table_concat = table.concat
 
-local ParamTypePushHandler <const> = setmetatable(
+local ParamTypePushHandler_VarArgs <const> = setmetatable(
     {
         ["Any"]         =   ";i+=1;push_arg_int(args[i])",
         ["Any*"]        =   ";i+=1;push_arg_pointer(args[i])",
@@ -41,7 +42,50 @@ local ParamTypePushHandler <const> = setmetatable(
         __index =   function(Self, Key)
                         local TypePushHandlerString = ";i+=1;push_arg_%s(args[i])":format(Key)
                         Self[Key] = TypePushHandlerString
-                        print("\n", 'WARNING: Push arg type "%s" is undefined.':format(Key), "\n")
+                        print("\n", 'WARNING: Push arg VarArg type "%s" is undefined.':format(Key), "\n")
+                        return TypePushHandlerString
+                    end
+    }
+)
+local ParamTypePushHandler_StcArgs <const> = setmetatable(
+    {
+        ["Any"]         =   "push_arg_int(%s)",
+        ["Any*"]        =   "push_arg_pointer(%s)",
+        ["Blip"]        =   "push_arg_int(%s)",
+        ["Blip*"]       =   "push_arg_pointer(%s)",
+        ["BOOL"]        =   "push_arg_bool(%s)",
+        ["BOOL*"]       =   "push_arg_pointer(%s)",
+        ["Cam"]         =   "push_arg_int(%s)",
+        ["char*"]       =   "push_arg_pointer(%s)",
+        ["Entity"]      =   "push_arg_int(%s)",
+        ["Entity*"]     =   "push_arg_pointer(%s)",
+        ["FireId"]      =   "push_arg_int(%s)",
+        ["float"]       =   "push_arg_float(%s)",
+        ["float*"]      =   "push_arg_pointer(%s)",
+        ["Hash"]        =   "push_arg_int(%s)",
+        ["Hash*"]       =   "push_arg_pointer(%s)",
+        ["int"]         =   "push_arg_int(%s)",
+        ["int*"]        =   "push_arg_pointer(%s)",
+        ["Interior"]    =   "push_arg_int(%s)",
+        ["Object"]      =   "push_arg_int(%s)",
+        ["Object*"]     =   "push_arg_pointer(%s)",
+        ["Ped"]         =   "push_arg_int(%s)",
+        ["Ped*"]        =   "push_arg_pointer(%s)",
+        ["Pickup"]      =   "push_arg_int(%s)",
+        ["Player"]      =   "push_arg_int(%s)",
+        ["ScrHandle"]   =   "push_arg_int(%s)",
+        ["ScrHandle*"]  =   "push_arg_pointer(%s)",
+        ["Vehicle"]     =   "push_arg_int(%s)",
+        ["Vehicle*"]    =   "push_arg_pointer(%s)",
+        ["const char*"] =   "push_arg_string(%s)",
+        ["Vector3"]     =   "push_arg_vector3(%s)",
+        ["Vector3*"]    =   "push_arg_pointer(%s)",
+    },
+    {
+        __index =   function(Self, Key)
+                        local TypePushHandlerString = "push_arg_int(%s)":format(Key)--"push_arg_%s(%s)":format(Key)
+                        Self[Key] = TypePushHandlerString
+                        print("\n", 'WARNING: Push arg StcArg type "%s" is undefined.':format(Key), "\n")
                         return TypePushHandlerString
                     end
     }
@@ -88,6 +132,7 @@ if NativeDbJsonFile then
     local NativeGenerationTime = os.unixseconds()
     
     local NativeWrapperLib = io_open("natives-%s.lua":format(NativeGenerationTime), "w")
+    
     NativeWrapperLib:write(
 [[-- DONT RENAME THIS FILE
 -- This should be natives-%s.lua wherein %s represents the version.
@@ -116,31 +161,65 @@ end
     for Namespace, HashTableDefinitions in NativeDb do
         NativeWrapperLib:write(Namespace.."={\n")
         for FunctionHash, FunctionData in HashTableDefinitions do
+            local HasSuspectedV3
+            local FunctionParams = FunctionData.params
+            local NumFunctionParams = #FunctionParams
             do
                 local FunctionName = FunctionData.name
                 if FunctionName:startswith "0x" then
                     FunctionName = "_"..FunctionName
                 end
-                NativeWrapperLib:write('    ["%s"]=function(...)local args,i={...},0 begin_call()':format(FunctionName))
-            end
-            do
-                local FunctionParams <const> = FunctionData.params
-                local JumpAhead = 0
-                for i=1, #FunctionParams do
-                    if JumpAhead == 0 then
-                        local ParamType = FunctionParams[i].type
-                        local ParamTypeString = ParamTypePushHandler[ParamType]
-                        
-                        if ParamType == "float"
+                
+                if NumFunctionParams > 2 then
+                    for i=1, NumFunctionParams do
+                        if FunctionParams[i].type == "float"
                         and (FunctionParams[i+1] and FunctionParams[i+1].type == "float")
                         and (FunctionParams[i+2] and FunctionParams[i+2].type == "float")
                         then
-                            ParamTypeString = ParamTypePushHandler["FloatV3"]
-                            JumpAhead+=2
+                            HasSuspectedV3 = i-1
+                            break
                         end
-                        NativeWrapperLib:write(ParamTypeString)
+                    end
+                end
+                
+                if not HasSuspectedV3 then
+                    if NumFunctionParams == 0 then
+                        NativeWrapperLib:write('    ["%s"]=function()begin_call()':format(FunctionName))
                     else
-                        JumpAhead-=1
+                        local FunctionParamsStringArrayTable = {}
+                        for i=1, NumFunctionParams do
+                            FunctionParamsStringArrayTable[i] = FunctionParams[i].name
+                        end
+                        NativeWrapperLib:write('    ["%s"]=function(%s)begin_call()':format(FunctionName, table_concat(FunctionParamsStringArrayTable, ",")))
+                    end
+                else
+                    NativeWrapperLib:write('    ["%s"]=function(...)local args,i={...},0 begin_call()':format(FunctionName))
+                end
+            end
+            do
+                if not HasSuspectedV3 then
+                    for i=1, NumFunctionParams do
+                        local FunctionParam = FunctionParams[i]
+                        NativeWrapperLib:write(ParamTypePushHandler_StcArgs[FunctionParam.type]:format(FunctionParam.name))
+                    end
+                else
+                    local JumpAhead = 0
+                    for i=1, NumFunctionParams do
+                        if JumpAhead == 0 then
+                            local ParamType = FunctionParams[i].type
+                            local ParamTypeString = ParamTypePushHandler_VarArgs[ParamType]
+                            if i > HasSuspectedV3
+                            and ParamType == "float"
+                            and (FunctionParams[i+1] and FunctionParams[i+1].type == "float")
+                            and (FunctionParams[i+2] and FunctionParams[i+2].type == "float")
+                            then
+                                ParamTypeString = ParamTypePushHandler_VarArgs["FloatV3"]
+                                JumpAhead+=2
+                            end
+                            NativeWrapperLib:write(ParamTypeString)
+                        else
+                            JumpAhead-=1
+                        end
                     end
                 end
             end
