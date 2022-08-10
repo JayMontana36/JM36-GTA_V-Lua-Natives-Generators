@@ -51,7 +51,7 @@ local ParamTypePushHandler_VarArgs <const> = setmetatable(
         ["FireId"]      =   ";i+=1;push_arg_int(args[i])",
         ["float"]       =   ";i+=1;push_arg_float(args[i])",
         ["float*"]      =   ";i+=1;push_arg_pointer(args[i])",
-        ["FloatV3"]     =   ";i+=1;i=i+push_arg_FloatV3(i,args)",
+        ["FloatV3"]     =   ";i+=1;i=i+push_arg_FloatV3(args,i)",
         ["Hash"]        =   ";i+=1;push_arg_int(args[i])",
         ["Hash*"]       =   ";i+=1;push_arg_pointer(args[i])",
         ["int"]         =   ";i+=1;push_arg_int(args[i])",
@@ -154,15 +154,16 @@ local native_invoker = native_invoker
 local begin_call, end_call, get_return_value_bool, get_return_value_float, get_return_value_int, get_return_value_string, get_return_value_vector3, push_arg_bool, push_arg_float, push_arg_int, push_arg_pointer, push_arg_string, push_arg_vector3 = native_invoker.begin_call, native_invoker.end_call, native_invoker.get_return_value_bool, native_invoker.get_return_value_float, native_invoker.get_return_value_int, native_invoker.get_return_value_string, native_invoker.get_return_value_vector3, native_invoker.push_arg_bool, native_invoker.push_arg_float, native_invoker.push_arg_int, native_invoker.push_arg_pointer, native_invoker.push_arg_string, native_invoker.push_arg_vector3
 
 local type = type
-local push_arg_FloatV3 <const> = function(i, args)
-    pluto_switch type(i) do
+local push_arg_FloatV3 <const> = function(args,i)
+    local arg = args[i]
+    pluto_switch type(arg) do
         case "number":
-            push_arg_float(args[i])
+            push_arg_float(arg)
             push_arg_float(args[i+1])
             push_arg_float(args[i+2])
             return 2
         pluto_default:
-            push_arg_vector3(args[i])
+            push_arg_vector3(arg)
             return 0
     end
 end
