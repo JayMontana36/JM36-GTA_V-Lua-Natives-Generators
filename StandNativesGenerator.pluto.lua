@@ -3,6 +3,39 @@ local setmetatable = setmetatable
 local io_open = io.open
 local table_concat = table.concat
 
+local ParamTypeReturnHandler <const> = setmetatable(
+    {
+        ["Any"]         =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Any*"]        =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Blip"]        =   'end_call("%s")return get_return_value_int()end,\n',
+        ["BOOL"]        =   'end_call("%s")return get_return_value_bool()end,\n',
+        ["Cam"]         =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Entity"]      =   'end_call("%s")return get_return_value_int()end,\n',
+        ["FireId"]      =   'end_call("%s")return get_return_value_int()end,\n',
+        ["float"]       =   'end_call("%s")return get_return_value_float()end,\n',
+        ["Hash"]        =   'end_call("%s")return get_return_value_int()end,\n',
+        ["int"]         =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Interior"]    =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Object"]      =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Ped"]         =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Pickup"]      =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Player"]      =   'end_call("%s")return get_return_value_int()end,\n',
+        ["ScrHandle"]   =   'end_call("%s")return get_return_value_int()end,\n',
+        ["Vehicle"]     =   'end_call("%s")return get_return_value_int()end,\n',
+        ["const char*"] =   'end_call("%s")return get_return_value_string()end,\n',
+        ["Vector3"]     =   'end_call("%s")return get_return_value_vector3()end,\n',
+        ["void"]        =   'end_call("%s")end,\n',
+                    
+    },
+    {
+        __index =   function(Self, Key)
+                        local TypeReturnHandlerString = 'end_call("%s")return get_return_value_%s()end,\n':format("%s", Key)
+                        Self[Key] = TypeReturnHandlerString
+                        print("\n", 'WARNING: Return type "%s" is undefined.':format(Key), "\n")
+                        return TypeReturnHandlerString
+                    end
+    }
+)
 local ParamTypePushHandler_VarArgs <const> = setmetatable(
     {
         ["Any"]         =   ";i+=1;push_arg_int(args[i])",
@@ -18,7 +51,7 @@ local ParamTypePushHandler_VarArgs <const> = setmetatable(
         ["FireId"]      =   ";i+=1;push_arg_int(args[i])",
         ["float"]       =   ";i+=1;push_arg_float(args[i])",
         ["float*"]      =   ";i+=1;push_arg_pointer(args[i])",
-        ["FloatV3"]     =   ";i+=1;i=i+push_arg_FloatV3(args[i])",
+        ["FloatV3"]     =   ";i+=1;i=i+push_arg_FloatV3(i,args)",
         ["Hash"]        =   ";i+=1;push_arg_int(args[i])",
         ["Hash*"]       =   ";i+=1;push_arg_pointer(args[i])",
         ["int"]         =   ";i+=1;push_arg_int(args[i])",
@@ -90,36 +123,14 @@ local ParamTypePushHandler_StcArgs <const> = setmetatable(
                     end
     }
 )
-local ParamTypeReturnHandler <const> = setmetatable(
+local StcArgs_StringSubs <const> = setmetatable(
     {
-        ["Any"]         =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Any*"]        =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Blip"]        =   'end_call("%s")return get_return_value_int()end,\n',
-        ["BOOL"]        =   'end_call("%s")return get_return_value_bool()end,\n',
-        ["Cam"]         =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Entity"]      =   'end_call("%s")return get_return_value_int()end,\n',
-        ["FireId"]      =   'end_call("%s")return get_return_value_int()end,\n',
-        ["float"]       =   'end_call("%s")return get_return_value_float()end,\n',
-        ["Hash"]        =   'end_call("%s")return get_return_value_int()end,\n',
-        ["int"]         =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Interior"]    =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Object"]      =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Ped"]         =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Pickup"]      =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Player"]      =   'end_call("%s")return get_return_value_int()end,\n',
-        ["ScrHandle"]   =   'end_call("%s")return get_return_value_int()end,\n',
-        ["Vehicle"]     =   'end_call("%s")return get_return_value_int()end,\n',
-        ["const char*"] =   'end_call("%s")return get_return_value_string()end,\n',
-        ["Vector3"]     =   'end_call("%s")return get_return_value_vector3()end,\n',
-        ["void"]        =   'end_call("%s")end,\n',
-                    
+        ["end"]     =   "_end",
+        ["repeat"]  =   "_repeat",
     },
     {
         __index =   function(Self, Key)
-                        local TypeReturnHandlerString = 'end_call("%s")return get_return_value_%s()end,\n':format("%s", Key)
-                        Self[Key] = TypeReturnHandlerString
-                        print("\n", 'WARNING: Return type "%s" is undefined.':format(Key), "\n")
-                        return TypeReturnHandlerString
+                        return Key
                     end
     }
 )
@@ -188,7 +199,7 @@ end
                     else
                         local FunctionParamsStringArrayTable = {}
                         for i=1, NumFunctionParams do
-                            FunctionParamsStringArrayTable[i] = FunctionParams[i].name
+                            FunctionParamsStringArrayTable[i] = StcArgs_StringSubs[FunctionParams[i].name]
                         end
                         NativeWrapperLib:write('    ["%s"]=function(%s)begin_call()':format(FunctionName, table_concat(FunctionParamsStringArrayTable, ",")))
                     end
@@ -200,7 +211,7 @@ end
                 if not HasSuspectedV3 then
                     for i=1, NumFunctionParams do
                         local FunctionParam = FunctionParams[i]
-                        NativeWrapperLib:write(ParamTypePushHandler_StcArgs[FunctionParam.type]:format(FunctionParam.name))
+                        NativeWrapperLib:write(ParamTypePushHandler_StcArgs[FunctionParam.type]:format(StcArgs_StringSubs[FunctionParam.name]))
                     end
                 else
                     local JumpAhead = 0
