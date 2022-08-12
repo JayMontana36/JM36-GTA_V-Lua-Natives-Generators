@@ -216,9 +216,59 @@ end
     
     collectgarbage()
     
+    NativeWrapperLib:write(
+[[local OldNames <const> =
+{
+]])
+    
+    do
+        local OldNamesArray, NumOldNamesArray = {}, 0
+        for h=1, NumNamespaceArray do
+            local NamespaceData = NamespaceArray[h]
+            local NamespaceFunctions = NamespaceData[2]
+            
+            for i=1, #NamespaceFunctions do
+                local FunctionData = NamespaceFunctions[i]
+                local FunctionProperties = FunctionData[2]
+                local OldNames = FunctionProperties.old_names
+                
+                if OldNames then
+                    for j=1, #OldNames do
+                        NumOldNamesArray+=1;OldNamesArray[NumOldNamesArray]={OldNames[j],FunctionData[1]}
+                    end
+                end
+            end
+        end
+        table_sort(OldNamesArray, table_sort_func)
+        for i=1, NumOldNamesArray do
+            local OldName = OldNamesArray[i]
+            NativeWrapperLib:write('    ["%s"]="%s",\n':format(OldName[1],OldName[2]))
+        end
+    end
+    
+    NativeWrapperLib:write(
+[[}
+
+local metatable <const> =
+{
+    __index=function(Self,Key)
+        local NewName = OldNames[Key]
+        if NewName then
+            local Function = Self[NewName]
+            if Function then
+                Self[Key] = Self[NewName]
+                print("\n", 'WARNING: Native "%s" is now known as "%s".':format(Key, NewName), "\n")
+            end
+        end
+    end
+}
+local setmetatable = setmetatable
+
+]])
+    
     for h=1, NumNamespaceArray do
         local NamespaceData = NamespaceArray[h]
-        NativeWrapperLib:write(NamespaceData[1].."={\n")
+        NativeWrapperLib:write(NamespaceData[1].."=setmetatable({\n")
         
         local NamespaceFunctions = NamespaceData[2]
         for i=1, #NamespaceFunctions do
@@ -291,6 +341,6 @@ end
             end
             NativeWrapperLib:write(ParamTypeReturnHandler[FunctionProperties.return_type]:format(FunctionData[3]:sub(3)))
         end
-        NativeWrapperLib:write("}\n")
+        NativeWrapperLib:write("},metatable)\n")
     end
 end
