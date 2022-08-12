@@ -2,6 +2,31 @@ local json_decode = require('json').decode
 local setmetatable = setmetatable
 local io_open = io.open
 local table_concat = table.concat
+local math_min = math.min
+local string_byte = string.byte
+local table_sort = table.sort
+local collectgarbage = collectgarbage
+
+--local _ = string_byte"_"
+local table_sort_func <const> = function(inputA,inputB)
+    inputA,inputB=inputA[1],inputB[1]
+    if inputA == inputB then return false end
+    
+    local Limit = math_min(#inputA,#inputB) + 1
+    
+    for i=1,Limit do
+        if i ~= Limit then
+            local _inputA,_inputB = string_byte(inputA[i]),string_byte(inputB[i])
+--          if _inputA ~= _ and _inputB ~= _ then
+                if _inputA~=_inputB then
+                    return _inputA < _inputB
+                end
+--          end
+        else
+            return inputA[i]==nil
+        end
+    end
+end
 
 local ParamTypeReturnHandler <const> = setmetatable(
     {
@@ -170,25 +195,53 @@ end
 
 ]]:format(NativeGenerationTime, NativeGenerationTime))
     
-    for Namespace, HashTableDefinitions in NativeDb do
-        NativeWrapperLib:write(Namespace.."={\n")
+    local NamespaceArray, NumNamespaceArray = {}, 0
+    do
+        for Namespace, HashTableDefinitions in NativeDb do
+            NumNamespaceArray+=1;NamespaceArray[NumNamespaceArray]={Namespace,HashTableDefinitions}
+        end
+        table_sort(NamespaceArray, table_sort_func)
+    end
+    NativeDb = nil
+    
+    for h=1, NumNamespaceArray do
+        local FunctionArray, i = {}, 0
+        local HashTableDefinitions = NamespaceArray[h][2]
         for FunctionHash, FunctionData in HashTableDefinitions do
+            i+=1;FunctionArray[i]={FunctionData.name,FunctionData,FunctionHash}
+        end
+        table_sort(FunctionArray, table_sort_func)
+        NamespaceArray[h][2]=FunctionArray
+    end
+    
+    collectgarbage()
+    
+    for h=1, NumNamespaceArray do
+        local NamespaceData = NamespaceArray[h]
+        NativeWrapperLib:write(NamespaceData[1].."={\n")
+        
+        local NamespaceFunctions = NamespaceData[2]
+        for i=1, #NamespaceFunctions do
+            local FunctionData = NamespaceFunctions[i]
+            local FunctionProperties = FunctionData[2]
+            
             local HasSuspectedV3
-            local FunctionParams = FunctionData.params
+            local FunctionParams = FunctionProperties.params
             local NumFunctionParams = #FunctionParams
+            
             do
-                local FunctionName = FunctionData.name
+                local FunctionName = FunctionData[1]
                 if FunctionName:startswith "0x" then
                     FunctionName = "_"..FunctionName
                 end
                 
                 if NumFunctionParams > 2 then
-                    for i=1, NumFunctionParams do
-                        if FunctionParams[i].type == "float"
-                        and (FunctionParams[i+1] and FunctionParams[i+1].type == "float")
-                        and (FunctionParams[i+2] and FunctionParams[i+2].type == "float")
+                    for j=1, NumFunctionParams do
+                        if FunctionParams[j].type == "float"
+                        and (FunctionParams[j+1] and FunctionParams[j+1].type == "float")
+                        and (FunctionParams[j+2] and FunctionParams[j+2].type == "float")
                         then
-                            HasSuspectedV3 = i-1
+                            HasSuspectedV3 = j-1
                             break
                         end
                     end
@@ -199,8 +252,8 @@ end
                         NativeWrapperLib:write('    ["%s"]=function()begin_call()':format(FunctionName))
                     else
                         local FunctionParamsStringArrayTable = {}
-                        for i=1, NumFunctionParams do
-                            FunctionParamsStringArrayTable[i] = StcArgs_StringSubs[FunctionParams[i].name]
+                        for j=1, NumFunctionParams do
+                            FunctionParamsStringArrayTable[i] = StcArgs_StringSubs[FunctionParams[j].name]
                         end
                         NativeWrapperLib:write('    ["%s"]=function(%s)begin_call()':format(FunctionName, table_concat(FunctionParamsStringArrayTable, ",")))
                     end
@@ -208,22 +261,23 @@ end
                     NativeWrapperLib:write('    ["%s"]=function(...)local args,i={...},0 begin_call()':format(FunctionName))
                 end
             end
+            
             do
                 if not HasSuspectedV3 then
-                    for i=1, NumFunctionParams do
-                        local FunctionParam = FunctionParams[i]
+                    for j=1, NumFunctionParams do
+                        local FunctionParam = FunctionParams[j]
                         NativeWrapperLib:write(ParamTypePushHandler_StcArgs[FunctionParam.type]:format(StcArgs_StringSubs[FunctionParam.name]))
                     end
                 else
                     local JumpAhead = 0
-                    for i=1, NumFunctionParams do
+                    for j=1, NumFunctionParams do
                         if JumpAhead == 0 then
-                            local ParamType = FunctionParams[i].type
+                            local ParamType = FunctionParams[j].type
                             local ParamTypeString = ParamTypePushHandler_VarArgs[ParamType]
-                            if i > HasSuspectedV3
+                            if j > HasSuspectedV3
                             and ParamType == "float"
-                            and (FunctionParams[i+1] and FunctionParams[i+1].type == "float")
-                            and (FunctionParams[i+2] and FunctionParams[i+2].type == "float")
+                            and (FunctionParams[j+1] and FunctionParams[j+1].type == "float")
+                            and (FunctionParams[j+2] and FunctionParams[j+2].type == "float")
                             then
                                 ParamTypeString = ParamTypePushHandler_VarArgs["FloatV3"]
                                 JumpAhead+=2
@@ -235,7 +289,7 @@ end
                     end
                 end
             end
-            NativeWrapperLib:write(ParamTypeReturnHandler[FunctionData.return_type]:format(FunctionHash:sub(3)))
+            NativeWrapperLib:write(ParamTypeReturnHandler[FunctionProperties.return_type]:format(FunctionData[3]:sub(3)))
         end
         NativeWrapperLib:write("}\n")
     end
