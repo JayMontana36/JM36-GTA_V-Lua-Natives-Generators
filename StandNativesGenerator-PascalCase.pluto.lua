@@ -323,14 +323,22 @@ setmetatable
         end
         NativeWrapperLib:write(ParamTypeReturnHandler[FunctionProperties.return_type]:format(FunctionData[3]:sub(3)))
     end
+	
     NativeWrapperLib:write(
 [[      __index=function(Self,Key)
-            local NewName = OldNames[Key]
-            if NewName then
-                Self[Key] = Self[NewName]
-                print("\n", 'WARNING: Native "%s" is now known as "%s".':format(Key, NewName), "\n")
+			local NewName = OldNames[Key]
+			if NewName then
+                local Value = Self[NewName]
+				Self[Key] = Value
+				do
+					local _, error = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),5) -- 4 levels up + this 1
+					error = error:split("//")
+					error = error[#error]
+					print(("[Heads Up!] - %s"):format(error))
+				end
+				return Value
             end
-        end
+		end
     }
 )]])
 end
