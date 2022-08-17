@@ -7,7 +7,6 @@ local string_byte = string.byte
 local table_sort = table.sort
 local collectgarbage = collectgarbage
 local pairs = pairs
-local string_split = string.split
 
 local string_UpperFirstLowerElse = function(string)
 	return string:sub(1,1):upper()..string:sub(2):lower()
