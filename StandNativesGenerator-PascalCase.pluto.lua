@@ -292,7 +292,7 @@ setmetatable
             else
                 local FunctionParamsStringArrayTable = {}
                 for j=1, NumFunctionParams do
-                    FunctionParamsStringArrayTable[i] = StcArgs_StringSubs[FunctionParams[j].name]
+                    FunctionParamsStringArrayTable[j] = StcArgs_StringSubs[FunctionParams[j].name]
                 end
                 NativeWrapperLib:write('        ["%s"]=function(%s)begin_call()':format(FunctionData[1], table_concat(FunctionParamsStringArrayTable, ",")))
                 for j=1, NumFunctionParams do
@@ -323,22 +323,22 @@ setmetatable
         end
         NativeWrapperLib:write(ParamTypeReturnHandler[FunctionProperties.return_type]:format(FunctionData[3]:sub(3)))
     end
-	
+    
     NativeWrapperLib:write(
 [[      __index=function(Self,Key)
-			local NewName = OldNames[Key]
-			if NewName then
+            local NewName = OldNames[Key]
+            if NewName then
                 local Value = Self[NewName]
-				Self[Key] = Value
-				do
-					local _, error = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),5) -- 4 levels up + this 1
-					error = error:split("//")
-					error = error[#error]
-					print(("[Heads Up!] - %s"):format(error))
-				end
-				return Value
+                Self[Key] = Value
+                do
+                    local _, error = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),5) -- 4 levels up + this 1
+                    error = error:split("//")
+                    error = error[#error]
+                    print(("[Heads Up!] - %s"):format(error))
+                end
+                return Value
             end
-		end
+        end
     }
 )]])
 end
