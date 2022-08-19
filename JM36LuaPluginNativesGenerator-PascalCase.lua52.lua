@@ -21,31 +21,31 @@ end
 
 --local _ = string_byte"_"
 local table_sort_func = function(inputA,inputB)
-    inputA,inputB=inputA[1],inputB[1]
-    if inputA == inputB then return false end
+	inputA,inputB=inputA[1],inputB[1]
+	if inputA == inputB then return false end
 
-    local Limit = math_min(#inputA,#inputB) + 1
+	local Limit = math_min(#inputA,#inputB) + 1
 
-    for i=1,Limit do
-        if i ~= Limit then
-            local _inputA,_inputB = string_byte(inputA:sub(i,i)),string_byte(inputB:sub(i,i))
---          if _inputA ~= _ and _inputB ~= _ then
-                if _inputA~=_inputB then
-                    return _inputA < _inputB
-                end
---          end
-        else
-            return inputA:sub(i,i)==nil
-        end
-    end
+	for i=1,Limit do
+		if i ~= Limit then
+			local _inputA,_inputB = string_byte(inputA:sub(i,i)),string_byte(inputB:sub(i,i))
+--			if _inputA ~= _ and _inputB ~= _ then
+				if _inputA~=_inputB then
+					return _inputA < _inputB
+				end
+--			end
+		else
+			return inputA:sub(i,i)==nil
+		end
+	end
 end
 
 local NativeDbJsonFile = io_open(__Internal_Path..'natives.json')
 if NativeDbJsonFile then
 	local NativeDb = json_decode(NativeDbJsonFile:read('*a'))
-    NativeDbJsonFile:close()
+	NativeDbJsonFile:close()
 
-    local NativeGenerationTime = os.time()
+	local NativeGenerationTime = os.time()
 
 	local NativeWrapperLib = io_open(__Internal_Path..("0A_Natives-%s.lua"):format(NativeGenerationTime), "w")
 
@@ -149,9 +149,9 @@ JM36_GTAV_LuaPlugin_FunctionRemapper_Version = %s
 	local _G = _G
 	
 	local FunctionArray, NumFunctionArray = {}, 0
-    do
-        for Namespace, HashTableDefinitions in pairs(NativeDb) do
-            local NamespaceTarget = NamespacesLP[Namespace] and Namespace
+	do
+		for Namespace, HashTableDefinitions in pairs(NativeDb) do
+			local NamespaceTarget = NamespacesLP[Namespace] and Namespace
 			for FunctionHash, FunctionData in pairs(HashTableDefinitions) do
 				FunctionHash = "_"..FunctionHash
 				local FunctionCurName = FunctionData.name
@@ -200,11 +200,11 @@ JM36_GTAV_LuaPlugin_FunctionRemapper_Version = %s
 						end
 					end
 				end
-            end
-        end
-        table_sort(FunctionArray, table_sort_func)
-    end
-    NativeDb = nil
+			end
+		end
+		table_sort(FunctionArray, table_sort_func)
+	end
+	NativeDb = nil
 	
 	collectgarbage()
 	
@@ -260,7 +260,7 @@ _G2.Natives_PascalCase = setmetatable
 		__index=function(Self,Key)
 			local NewName = OldNames[Key]
 			if NewName then
-                local Value = Self[NewName]
+				local Value = Self[NewName]
 				Self[Key] = Value
 				do
 					local _, ErrorString = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),5) -- 4 levels up + this 1
@@ -269,7 +269,7 @@ _G2.Natives_PascalCase = setmetatable
 					print(("[Heads Up!] - %s"):format(ErrorString))
 				end
 				return Value
-            end
+			end
 		end
 	}
 )]])
