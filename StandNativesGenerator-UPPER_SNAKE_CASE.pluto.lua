@@ -258,12 +258,12 @@ local metatable <const> =
             if Function then
                 Self[Key] = Function
                 do
-					local _, error = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),2)
-					error = error:split("//")
-					error = error[#error]
-					print(("[Heads Up!] - %s"):format(error))
-				end
-				return Function
+                    local _, error = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),2)
+                    error = error:split("//")
+                    error = error[#error]
+                    print(("[Heads Up!] - %s"):format(error))
+                end
+                return Function
             end
         end
     end
@@ -309,7 +309,7 @@ local setmetatable = setmetatable
                     else
                         local FunctionParamsStringArrayTable = {}
                         for j=1, NumFunctionParams do
-                            FunctionParamsStringArrayTable[i] = StcArgs_StringSubs[FunctionParams[j].name]
+                            FunctionParamsStringArrayTable[j] = StcArgs_StringSubs[FunctionParams[j].name]
                         end
                         NativeWrapperLib:write('    ["%s"]=function(%s)begin_call()':format(FunctionName, table_concat(FunctionParamsStringArrayTable, ",")))
                     end
