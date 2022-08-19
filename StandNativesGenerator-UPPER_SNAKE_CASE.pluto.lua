@@ -256,8 +256,14 @@ local metatable <const> =
         if NewName then
             local Function = Self[NewName]
             if Function then
-                Self[Key] = Self[NewName]
-                print("\n", 'WARNING: Native "%s" is now known as "%s".':format(Key, NewName), "\n")
+                Self[Key] = Function
+                do
+					local _, error = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),2)
+					error = error:split("//")
+					error = error[#error]
+					print(("[Heads Up!] - %s"):format(error))
+				end
+				return Function
             end
         end
     end
