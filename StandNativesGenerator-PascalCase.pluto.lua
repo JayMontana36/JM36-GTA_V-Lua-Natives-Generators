@@ -331,11 +331,11 @@ setmetatable
                 local Value = Self[NewName]
                 Self[Key] = Value
                 do
-					local _, ErrorString = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),2)
-					ErrorString = ErrorString:split("\\")
-					ErrorString = ErrorString[#ErrorString]
-					print(("[Heads Up!] - %s"):format(ErrorString))
-				end
+                    local _, ErrorString = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),2)
+                    ErrorString = ErrorString:split("\\")
+                    ErrorString = ErrorString[#ErrorString]
+                    print(("[Heads Up!] - %s"):format(ErrorString))
+                end
                 return Value
             end
         end
