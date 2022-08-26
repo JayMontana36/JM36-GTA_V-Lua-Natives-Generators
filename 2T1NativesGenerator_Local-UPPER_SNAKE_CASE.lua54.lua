@@ -32,6 +32,40 @@ local table_sort_func <const> = function(inputA,inputB)
     end
 end
 
+local ParamTypeReturnHandler <const> = setmetatable(
+    {
+        ["Any"]         =   '',
+        ["Any*"]        =   '',
+        ["Blip"]        =   ':__tointeger()',
+        ["BOOL"]        =   ':__tointeger()~=0;',
+        ["Cam"]         =   ':__tointeger()',
+        ["Entity"]      =   ':__tointeger()',
+        ["FireId"]      =   ':__tointeger()',
+        ["float"]       =   ':__tonumber()',
+        ["Hash"]        =   ':__tointeger()',
+        ["int"]         =   ':__tointeger()',
+        ["Interior"]    =   ':__tointeger()',
+        ["Object"]      =   ':__tointeger()',
+        ["Ped"]         =   ':__tointeger()',
+        ["Pickup"]      =   ':__tointeger()',
+        ["Player"]      =   ':__tointeger()',
+        ["ScrHandle"]   =   ':__tointeger()',
+        ["Vehicle"]     =   ':__tointeger()',
+        ["const char*"] =   ':__tostring(true)',
+        ["Vector3"]     =   ':__tov3()',
+        ["void"]        =   '',
+                    
+    },
+    {
+        __index =   function(Self, Key)
+                        local TypeReturnHandlerString = ''
+                        Self[Key] = TypeReturnHandlerString
+                        print("\n", 'WARNING: Return type "%s" is undefined.':format(Key), "\n")
+                        return TypeReturnHandlerString
+                    end
+    }
+)
+
 local NativeDbJsonFile = io_open'natives.json'
 if NativeDbJsonFile then
     local NativeDb = json_decode(NativeDbJsonFile:read('a'))
@@ -111,7 +145,7 @@ return setmetatable
             if FunctionName:startswith "0x" then
                 FunctionName = "_"..FunctionName
             end
-            NativeWrapperLib:write('        ["%s"]=function(...)return native_call(%s,...)end,\n':format(FunctionName,FunctionData[3]))
+            NativeWrapperLib:write('        ["%s"]=function(...)return native_call(%s,...)%send,\n':format(FunctionName,FunctionData[3],ParamTypeReturnHandler[FunctionData[2].return_type]))
         end
     end
     
