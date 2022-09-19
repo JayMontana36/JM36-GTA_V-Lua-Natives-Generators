@@ -33,7 +33,6 @@ local ParamTypeReturnHandler <const> = setmetatable(
         ["const char*"] =   'end_call("%s")return get_return_value_string()end,\n',
         ["Vector3"]     =   'end_call("%s")return get_return_value_vector3()end,\n',
         ["void"]        =   'end_call("%s")end,\n',
-                    
     },
     {
         __index =   function(Self, Key)
