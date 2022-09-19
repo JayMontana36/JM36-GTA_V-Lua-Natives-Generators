@@ -11,25 +11,8 @@ local string_UpperFirstLowerElse <const> = function(string)
 	return string:sub(1,1):upper()..string:sub(2):lower()
 end
 
---local _ = string_byte"_"
 local table_sort_func <const> = function(inputA,inputB)
-	inputA,inputB=inputA[1],inputB[1]
-	if inputA == inputB then return false end
-	
-	local Limit = math_min(#inputA,#inputB) + 1
-	
-	for i=1,Limit do
-		if i ~= Limit then
-			local _inputA,_inputB = string_byte(inputA[i]),string_byte(inputB[i])
---			if _inputA ~= _ and _inputB ~= _ then
-				if _inputA~=_inputB then
-					return _inputA < _inputB
-				end
---			end
-		else
-			return inputA[i]==nil
-		end
-	end
+	return inputA[1] < inputB[1]
 end
 
 local ParamTypeReturnHandler <const> = setmetatable(
