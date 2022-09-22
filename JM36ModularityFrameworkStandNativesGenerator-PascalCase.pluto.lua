@@ -236,8 +236,11 @@ end
 		end
 		table_sort(OldNamesArray, table_sort_func)
 		for i=1, NumOldNamesArray do
-			local OldName = OldNamesArray[i]
-			NativeWrapperLib:write('	["%s"]="%s",\n':format(OldName[1],OldName[2]))
+			local OldNamesMap = OldNamesArray[i]
+			local OldName, NewName = OldNamesMap[1], OldNamesMap[2]
+			if OldName ~= NewName then
+				NativeWrapperLib:write('	["%s"]="%s",\n':format(OldName,NewName))
+			end
 		end
 	end
 	
@@ -315,10 +318,33 @@ _G2.Natives_PascalCase = setmetatable
 				local Value = Self[NewName]
 				Self[Key] = Value
 				do
-					local _, ErrorString = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),5) -- 4 levels up + this 1
-					ErrorString = ErrorString:split("//")
-					ErrorString = ErrorString[#ErrorString]
-					print(("[Heads Up!] - %s"):format(ErrorString))
+					local ErrorSource
+					do
+						local DebugInfoArray, DebugInfoCount = {}, 1
+						local debug_getinfo = debug.getinfo
+						local DebugInfo
+						repeat
+							DebugInfoCount += 1
+							DebugInfo = debug_getinfo(DebugInfoCount)
+							DebugInfoArray[DebugInfoCount] = DebugInfo
+						until DebugInfo == nil or DebugInfo.what == "main"
+						if DebugInfo and DebugInfo.what == "main" then
+							ErrorSource = DebugInfo
+						else
+							for Index=2,DebugInfoCount do
+								DebugInfo = DebugInfoArray[Index]
+								if DebugInfo.currentline ~= -1 and not DebugInfo.short_src:startswith "[string " then
+									ErrorSource = DebugInfo
+									break
+								end
+							end
+						end
+					end
+					if ErrorSource then
+						print(('[Heads Up - Native]\n"%s" is now known as "%s".\n%s:%s'):format(Key, NewName, ErrorSource.short_src, ErrorSource.currentline))
+					else
+						print(('[Heads Up - Native]\n"%s" is now known as "%s".\nNo additional information is available.'):format(Key, NewName))
+					end
 				end
 				return Value
 			end
