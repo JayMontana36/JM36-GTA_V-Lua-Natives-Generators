@@ -114,6 +114,7 @@ if NativeDbJsonFile then
 -- Additionally, you should bundle the version of this library that you are developing against with your script, so "installing" your script is a simple drag & drop operation.
 
 local native_call = native.call
+local ByteBuffer8, ByteBuffer32, ByteBuffer256 = native.ByteBuffer8, native.ByteBuffer32, native.ByteBuffer256 -- Unused (ByteBuffer16, ByteBuffer64, ByteBuffer128)
 
 ]]:format(NativeGenerationTime, NativeGenerationTime))
     
