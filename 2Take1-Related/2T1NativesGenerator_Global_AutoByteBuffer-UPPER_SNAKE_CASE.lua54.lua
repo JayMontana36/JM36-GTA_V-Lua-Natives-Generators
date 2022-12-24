@@ -195,7 +195,7 @@ local metatable <const> =
                     else
                         for Index=2,DebugInfoCount do
                             DebugInfo = DebugInfoArray[Index]
-                            if DebugInfo.currentline ~= -1 and DebugInfo.short_src:sub(1,8)~="[string " then
+                            if DebugInfo and DebugInfo.currentline ~= -1 and DebugInfo.short_src:sub(1,8)~="[string " then
                                 ErrorSource = DebugInfo
                                 break
                             end
