@@ -238,17 +238,40 @@ local metatable <const> =
     __index=function(Self,Key)
         local NewName = OldNames[Key]
         if NewName then
-            local Function = Self[NewName]
-            if Function then
-                Self[Key] = Function
+            local Value = Self[NewName]
+            Self[Key] = Value
+            do
+                local ErrorSource
                 do
-                    local _, ErrorString = pcall(error,('Native "%s" is now known as "%s".'):format(Key,NewName),2)
-                    ErrorString = ErrorString:split("\\")
-                    ErrorString = ErrorString[#ErrorString]
-                    print(("[Heads Up!] - %s"):format(ErrorString))
+                    local DebugInfoArray, DebugInfoCount = {}, 1
+                    local debug_getinfo = debug.getinfo
+                    local DebugInfo
+                    repeat
+                        DebugInfoCount = DebugInfoCount + 1
+                        DebugInfo = debug_getinfo(DebugInfoCount,"Sl")
+                        DebugInfoArray[DebugInfoCount] = DebugInfo
+                    until DebugInfo == nil or DebugInfo.what == "main"
+                    if DebugInfo and DebugInfo.what == "main" then
+                        ErrorSource = DebugInfo
+                    else
+                        for Index=2,DebugInfoCount do
+                            DebugInfo = DebugInfoArray[Index]
+                            if DebugInfo and DebugInfo.currentline ~= -1 and DebugInfo.short_src:sub(1,8)~="[string " then
+                                ErrorSource = DebugInfo
+                                break
+                            end
+                        end
+                    end
                 end
-                return Function
+                if ErrorSource then
+                    --print(('[Heads Up - Native]\n"%s" is now known as "%s".\n%s:%s'):format(Key, NewName, ErrorSource.short_src, ErrorSource.currentline))
+                    print(('[Heads Up - Native]\n"%s" is now known as "%s".\n%s:%s'):format(Key, NewName, ErrorSource.short_src, ErrorSource.currentline))
+                else
+                    --print(('[Heads Up - Native]\n"%s" is now known as "%s".\nNo additional information is available.'):format(Key, NewName))
+                    print(('[Heads Up - Native]\n"%s" is now known as "%s".\nNo additional information is available.'):format(Key, NewName))
+                end
             end
+            return Value
         end
     end
 }
